@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+    <title>Patents Dashboard using p.js</title> 
+
+    <link href="styles.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="jquery-1.6.4.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="processing-1.3.6.js"></script>
+    <script type="text/javascript" src="pjsCharts.js"></script>
+    
+    
+<!--   Behavior. -->
+    <script type="text/javascript">
+
+    
+        // Accordion containers.
+        $(document).ready(function(){
+            $('.accTrigger').click(function(){
+                if( $(this).next().is(':hidden') ) { 
+                    $(this).next().slideDown(); 
+                }
+                else{
+                    $(this).next().slideUp();
+                }
+            return false;
+            });
+        }); 
+        
+
+        // Link Multi Select to charts
+        $(document).ready(function(){
+            $("#labelSelect").change(function () {
+                $("#labelSelect option:selected").each(function () {
+                    $(this).data("label").show();
+                }); 
+                $("#labelSelect option:not(:selected)").each(function () {
+                    $(this).data("label").hide();
+                }); 
+                    
+                patents.update();
+                $("canvas").each( function(){
+                    $(this).data("pjsObject").pjs.setup();  
+                });
+            }).change();
+        });
+    
+
+        // Link Single Select to charts
+        $(document).ready(function(){
+            $("#inputSelect").change(function () {
+                patents.update();                   
+                $("#pieCanvas").data("pjsObject").pjs.setup();              
+            }).change();
+        });
+
+        // Make sortable
+        $(document).ready(function() {
+            $(".sortable").sortable();
+        });
+        
+        // Link sorting of label list to charts
+        $(document).ready(function() {
+            $("#labelList").bind( "sortupdate" , function(){                    
+                patents.update();
+                $("canvas").each( function(){
+                    $(this).data("pjsObject").pjs.setup();  
+                });             
+            });
+        });
+
+
+        
+ </script>
+    
+
+</head>
+<body>
+
+
+<!-- HACK: TODO: Using these divs as a trick be able to have a color array but only change the colors in the css file. -->
+<div>
+    <div class="chartColorArray" id="chartColor1"></div>
+    <div class="chartColorArray" id="chartColor2"></div>
+    <div class="chartColorArray" id="chartColor3"></div>
+    <div class="chartColorArray" id="chartColor4"></div>
+    <div class="chartColorArray" id="chartColor5"></div>
+    <div class="chartColorArray" id="chartColor6"></div>
+</div>
+
+
+
+<div class='wrap'>
+    
+    <div class="navigation">
+        <h3> Total Patents filed from <span id="startYear"></span> to <span id="stopYear"></span></h3> 
+    </div>
+    
+    <div class="main">
+        <div id="leftColumn">
+            <div class="container">
+                <div id="accTrigger1" class="accTrigger accElement">
+                    <div class="alignContainer">
+                        Data selection
+                    </div>
+                </div>
+                <div id="accContainer1" class="accContainer accElement">
+                    <h5>Countries:</h5>  
+                    <select id="labelSelect" multiple="multiple"></select>
+                    <h5>Years:</h5>  
+                    <select id="inputSelect"></select>  
+                </div>
+            </div>
+            <div class="container">
+                <div id="accTrigger2" class="accTrigger accElement">
+                    <div class="alignContainer">
+                        From <span id="pieInput"></span> patents
+                    </div>
+                </div>
+                <div id="accContainer2" class="accContainer accElement">
+                    <canvas id="pieCanvas"></canvas>
+                </div>
+            </div>
+            <div class="container">
+                <div id="accTrigger3" class="accTrigger accElement">
+                    <div class="alignContainer">
+                        All years: <span id="pieTotalInput"></span> patents
+                    </div>
+                </div>
+                <div id="accContainer3" class="accContainer accElement">
+                    <canvas id="pieTotalCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+
+        <div id="labels" class="container">
+            <ul id="labelList" class="sortable" ></ul>
+        </div>
+
+        <div id="chart" class="container">
+            <canvas id="barCanvas"></canvas>
+        </div>
+
+<!--
+        <div id="table" class="container">
+
+        </div>
+-->
+        
+    </div>
+</div>
+
+<script type="text/javascript">
+
+        var patents = new Object ();            
+        patents.colors = new Array();
+        patents.data = new Object();
+
+        $("div.chartColorArray").each(function(){patents.colors.push($(this).css("color"))});                                
+            
+        patents.data.inputs = [ "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007"];
+        patents.data.labels = [ "Belgium", "Denmark", "Greece", "Ireland", "Poland", "Portugal"];
+        patents.data.table =  [ [ 373.7561 , 326.6484 , 309.954  , 274.6936 ,  240.6416 , 223.0672 , 133.6535 ,  53.1337 ,  21.4024 ],
+                                [ 236.8616 , 217.5691 , 174.1386 , 167.1786 ,  145.7318 , 100.6242 ,  63.1647 ,  23.4667 ,   3      ],
+                                [   6.444  ,   5.3095 ,   6.7    ,   8.3452 ,    5.9742 ,   4.4167 ,   4.7333 ,   5.3333 ,   0.3333 ],
+                                [  74.0055 ,  30.7929 ,  44.2782 ,  38.8761 ,   41.8107 ,  30.802  ,  27.1612 ,   8.6405 ,   2.2    ],
+                                [   8.6159 ,   8.8917 ,  10.7009 ,  11.1083 ,    8.4    ,   4.2167 ,   4.3    ,   1.7024 ,   0      ],
+                                [   5.2333 ,   2.6167 ,   5.5278 ,   5.3333 ,    5.8333 ,   2      ,   3      ,   1      ,   0      ] ];
+        
+        
+        patents.init = function (){
+        
+            // Update Title
+            $("span#startYear").text(String(patents.data.inputs[0]));
+            $("span#stopYear").text(String(patents.data.inputs[ patents.data.inputs.length - 1]));
+
+        
+            // Populate the select lists and associate data
+            $("#labelList").empty();
+            for (i=0; i < patents.data.labels.length ; i++){
+                $("#labelSelect").append('<option class="label" selected="selected" "value=' + patents.data.labels[i] + '>' + patents.data.labels[i] + '</option>');
+                $("#labelList").append('<li class="label" value=' + patents.data.labels[i] + '>' + patents.data.labels[i] + '</li>');
+
+            
+                $("#labelSelect option:last").data("label", $("#labelList li:last"));
+                $("#labelList li:last").data("select", $("#labelSelect option:last"));          
+            
+                $("#labelList li:last").css( "background-color" , patents.colors[i] );
+            
+                $("#labelSelect option:last").data("values", patents.data.table[i]);
+                $("#labelSelect option:last").data("color", patents.colors[i] );
+                
+                var total = 0;
+                for (j=0; j < patents.data.table[i].length; j++)
+                    total += patents.data.table[i][j];
+                $("#labelSelect option:last").data("total", total );
+        
+
+            };
+            $("#labelSelect").data("inputs", patents.data.inputs)
+        
+        
+            for (i=0; i < patents.data.inputs.length ; i++){
+                $("#inputSelect").append('<option class="label" value=' + patents.data.inputs[i] + '>' + patents.data.inputs[i] + '</option>'); 
+            };      
+        
+            
+            $("#barCanvas").data("pjsObject",  
+                new ProcessingBarChart( { chartSize:       {x: $("#barCanvas").width(), y: $("#barCanvas").height() } , 
+                                          backgroundColor: $("#barCanvas").css("background-color") ,
+                                          colors:          patents.colors },
+                                        $("#barCanvas")[0]));
+            $("#pieCanvas").data("pjsObject", 
+                new ProcessingPieChart( { chartSize:       {x: $("#pieCanvas").width(), y: $("#pieCanvas").height() } , 
+                                          backgroundColor: $("#pieCanvas").css("background-color") ,
+                                          colors:          patents.colors },
+                                        $("#pieCanvas")[0]));
+            $("#pieTotalCanvas").data("pjsObject", 
+                new ProcessingPieChart( { chartSize:       {x: $("#pieTotalCanvas").width(), y: $("#pieTotalCanvas").height() } , 
+                                          backgroundColor: $("#pieTotalCanvas").css("background-color") ,
+                                          colors:          patents.colors },
+                                        $("#pieTotalCanvas")[0]));
+        };
+        
+            
+        patents.update = function (){
+            
+            var active = new Object ();
+            active.table = new Array ();
+            active.labels = new Array ();
+            active.colors = new Array ();
+            active.inputIndex = 0;
+            active.values = new Array ();
+            active.inputs = new Array ();
+            active.totals = new Array ();
+            active.sum = 0;
+            active.totalSum = 0;
+                
+    
+            $("#labelList li:visible").each( function( ){
+                if ( !($(this).hasClass("ui-sortable-placeholder")) ){  
+                    var v = $(this).data("select");
+                
+                    active.table.push(v.data("values"));
+                    active.labels.push(v.val());
+                    active.colors.push(v.data("color"));
+                    active.totals.push(v.data("total"));
+                }
+            });
+                
+            for( j = 0; j < $("#labelSelect").data( 'inputs' ).length; j++){
+                if ( $("#inputSelect option:selected").val() == $("#labelSelect").data( 'inputs' )[j] ){
+                    active.inputIndex = j;
+                    break;
+                }
+            }  
+            for ( i = 0 ; i < active.labels.length; i++){
+                active.values[i] = active.table[i][active.inputIndex]};    
+            
+            for ( i=0; i < active.totals.length; i++){
+                active.totalSum += active.totals[i];
+                active.sum += active.values[i]
+            };  
+                
+            $("span#pieInput").text( String($("#labelSelect").data( 'inputs' )[active.inputIndex]) + ": " + String( Math.round(active.sum) ) );
+            $("span#pieTotalInput").text( String( Math.round(active.totalSum) ) );     
+     
+            
+                
+            $("#barCanvas").data("pjsObject").data = { table: active.table, inputs: $("#labelSelect").data("inputs"), labels: active.labels};
+            $("#barCanvas").data("pjsObject").params.colors = active.colors;    
+            $("#pieCanvas").data("pjsObject").data = { labels: active.labels,values: active.values };
+            $("#pieCanvas").data("pjsObject").params.colors = active.colors;
+            $("#pieTotalCanvas").data("pjsObject").data = { labels: active.labels , values: active.totals };
+            $("#pieTotalCanvas").data("pjsObject").params.colors = active.colors;
+
+
+        };
+        
+        
+        patents.init();
+        patents.update();
+            
+        $("canvas").each( function(){
+            $(this).data("pjsObject").pjs.setup();  
+        });
+                
+                                                
+</script>
+
+
+</body>
+</html>
